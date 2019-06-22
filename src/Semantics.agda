@@ -9,20 +9,22 @@ open import Syntax
 
 -- Define the store (environment) by a function
 
+Store = Wvar → Maybe Wdata
+
 -- we need bool equality on Wvar
 _==_ : Wvar → Wvar → Bool
 (var n₁) == (var n₂) = n₁ ≡ᵇ n₂
 
 -- the empty store
-stempty : Wvar → Maybe Wdata
+stempty : Store
 stempty _ = nothing
 
-stupdate : Wvar → Wdata → (Wvar → Maybe Wdata) → Wvar → Maybe Wdata
+stupdate : Wvar → Wdata → Store → Store
 stupdate v₁ d f v₂ with v₁ == v₂
 ... | true = just d
 ... | false = f v₂
 
-stremove : Wvar → (Wvar → Maybe Wdata) → Wvar → Maybe Wdata
+stremove : Wvar → Store → Store
 stremove v₁ f v₂ with v₁ == v₂
 ... | true = nothing
 ... | false = f v₂
