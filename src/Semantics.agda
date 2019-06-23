@@ -50,3 +50,8 @@ varsAux (record { readInput = r ; blockProg = b ; writeOutput = o }) = r ∷ o �
 vars : WProgram → List Wvar
 vars r = nodupVar (varsAux r)
 
+-- initialiaze store for a program and an input
+initStore : WProgram → Wdata → Store
+initStore pg d = stupdate (WProgram.readInput pg) d (foldr (λ v → stupdate v nil) stempty (vars pg))
+
+
