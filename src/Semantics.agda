@@ -74,3 +74,37 @@ evalExp (head _) _             = nil
 evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 ... | true = nil • nil
 ... | false = nil
+
+
+
+
+-- Define intermediary representation of Wcommands
+data InterCom : Set where
+  assign  : Wvar → Wexp → InterCom
+  whilecond : Wexp → InterCom
+
+-- organize evaluation with an instruction pointer
+record WPointCom : Set where
+  constructor _,_
+  field
+    pointer : ℕ
+    command : InterCom
+
+ProgBlock = List WPointCom
+
+
+-- Pb: ugly def for sequence
+numProgAux : ℕ → Wcommand → ProgBlock
+numProgAux n (x ≔ y)    = [ (n , (assign x y)) ]
+numProgAux n (c₁ %% c₂) = (numProgAux n c₁) ++ (numProgAux (n + (length (numProgAux n c₁))) c₂)
+numProgAux n (while e do: c) = (n , (whilecond e)) ∷ (numProgAux (n + 1) c)
+
+record Wenv : Set where
+  field
+    st : Store
+    cpt : ℕ
+    stack : List ℕ
+    pg : ProgBlock
+
+PrepProg : WProgram → Wdata → Wenv
+PrepProg p d = record { st = initStore p d ; cpt = 0 ; stack = [] ; pg = numProgAux 0 (WProgram.blockProg p) }
