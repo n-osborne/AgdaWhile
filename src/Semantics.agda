@@ -17,6 +17,12 @@ Store = Wvar → Maybe Wdata
 _==_ : Wvar → Wvar → Bool
 (var n₁) == (var n₂) = n₁ ≡ᵇ n₂
 
+-- and bool equality between Wdata
+_≡ᵈ_ : Wdata → Wdata → Bool
+nil       ≡ᵈ nil       = true
+(d₁ • d₂) ≡ᵈ (d₃ • d₄) = (d₁ ≡ᵈ d₃) ∧ (d₂ ≡ᵈ d₄)
+d₁        ≡ᵈ d₂        = false
+
 -- the empty store
 stempty : Store
 stempty _ = nothing
@@ -54,4 +60,17 @@ vars r = nodupVar (varsAux r)
 initStore : WProgram → Wdata → Store
 initStore pg d = stupdate (WProgram.readInput pg) d (foldr (λ v → stupdate v nil) stempty (vars pg))
 
-
+-- evaluate an expression in regard to a store
+evalExp : Wexp → Store → Wdata
+evalExp (xvar v) st with st v
+... | nothing = nil
+... | just e  = e
+evalExp atom _                 = nil
+evalExp (cons e₁ e₂) st        = (evalExp e₁ st) • (evalExp e₂ st)
+evalExp (tail (cons e₁ e₂)) st = evalExp e₂ st
+evalExp (tail _) _             = nil
+evalExp (head (cons e₁ e₂)) st = evalExp e₁ st
+evalExp (head _) _             = nil
+evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
+... | true = nil • nil
+... | false = nil
