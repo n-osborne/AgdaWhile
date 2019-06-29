@@ -1,8 +1,6 @@
 module Semantics where
--- This module conrrespond to the Section 2.2 of the book
+-- This module corresponds to the Section 2.2 of the book
 
--- could use :
--- open import Data.AVL.IndexedMap
 open import Data.Maybe
 open import Data.Nat
 open import Data.Bool
@@ -11,6 +9,8 @@ open import Syntax
 
 -- Define the store (environment) by a function
 
+-- TODO : define Store with a list and get function with nil as default
+-- return value
 Store = Wvar → Maybe Wdata
 
 -- we need bool equality on Wvar
@@ -75,13 +75,11 @@ evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 ... | true = nil • nil
 ... | false = nil
 
-
-
-
 -- Define intermediary representation of Wcommands
 data InterCom : Set where
   assign  : Wvar → Wexp → InterCom
   whilecond : Wexp → InterCom
+  whileend : InterCom
 
 -- organize evaluation with an instruction pointer
 record WPointCom : Set where
@@ -92,12 +90,17 @@ record WPointCom : Set where
 
 ProgBlock = List WPointCom
 
+buildInterProg : Wcommand → List InterCom
+buildInterProg (x ≔ y)         = [ (assign x y) ]
+buildInterProg (c₁ %% c₂)      = (buildInterProg c₁) ++ (buildInterProg c₂)
+buildInterProg (while e do: c) = (whilecond e) ∷ (buildInterProg c) ++ [ whileend ]
 
--- Pb: ugly def for sequence
-numProgAux : ℕ → Wcommand → ProgBlock
-numProgAux n (x ≔ y)    = [ (n , (assign x y)) ]
-numProgAux n (c₁ %% c₂) = (numProgAux n c₁) ++ (numProgAux (n + (length (numProgAux n c₁))) c₂)
-numProgAux n (while e do: c) = (n , (whilecond e)) ∷ (numProgAux (n + 1) c)
+numProg : ℕ → List InterCom → ProgBlock
+numProg _ []       = []
+numProg n (x ∷ xs) = (n , x) ∷ numProg (suc n) xs
+
+buildProgBlock : Wcommand → ProgBlock
+buildProgBlock c = numProg zero (buildInterProg c)
 
 record Wenv : Set where
   field
@@ -107,4 +110,4 @@ record Wenv : Set where
     pg : ProgBlock
 
 PrepProg : WProgram → Wdata → Wenv
-PrepProg p d = record { st = initStore p d ; cpt = 0 ; stack = [] ; pg = numProgAux 0 (WProgram.blockProg p) }
+PrepProg p d = record { st = initStore p d ; cpt = 0 ; stack = [] ; pg = buildProgBlock (WProgram.blockProg p) }
