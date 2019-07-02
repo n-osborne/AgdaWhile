@@ -43,12 +43,17 @@ varsBlock (v ≔ _)         = [ v ]
 varsBlock (b₁ %% b₂)      = varsBlock b₁ ++ varsBlock b₂
 varsBlock (while _ do: b) = varsBlock b
 
--- Get the list of Wvar in a WProgram
+-- Get the list of Wvar in a WProgram with input in first var and
+-- output in second element of the list
+nodupVarAux : List Wvar → List Wvar → List Wvar
+nodupVarAux acc [] = acc
+nodupVarAux acc (x ∷ xs) with any (λ v → x == v) acc
+... | true  = nodupVarAux acc xs
+... | false = nodupVarAux (acc ++ [ x ]) xs 
+
 nodupVar : List Wvar → List Wvar
-nodupVar [] = []
-nodupVar (x ∷ xs) with any (λ v → x == v) xs
-... | true  = nodupVar xs
-... | false = x ∷ (nodupVar xs)
+nodupVar l = nodupVarAux [] l
+
 
 varsAux : WProgram → List Wvar
 varsAux (record { readInput = r ; blockProg = b ; writeOutput = o }) = r ∷ o ∷ (varsBlock b)
