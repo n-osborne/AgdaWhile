@@ -49,7 +49,7 @@ nodupVarAux : List Wvar → List Wvar → List Wvar
 nodupVarAux acc [] = acc
 nodupVarAux acc (x ∷ xs) with any (λ v → x == v) acc
 ... | true  = nodupVarAux acc xs
-... | false = nodupVarAux (acc ++ [ x ]) xs 
+... | false = nodupVarAux (x ∷ acc) xs 
 
 nodupVar : List Wvar → List Wvar
 nodupVar l = nodupVarAux [] l
@@ -81,9 +81,9 @@ evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 
 -- Define intermediary representation of Wcommands
 data InterCom : Set where
-  assign  : Wvar → Wexp → InterCom
+  assign    : Wvar → Wexp → InterCom
   whilecond : Wexp → InterCom
-  whileend : InterCom
+  whileend  : InterCom
 
 -- organize evaluation with an instruction pointer
 record WPointCom : Set where
