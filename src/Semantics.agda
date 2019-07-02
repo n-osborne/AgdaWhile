@@ -54,7 +54,6 @@ nodupVarAux acc (x ∷ xs) with any (λ v → x == v) acc
 nodupVar : List Wvar → List Wvar
 nodupVar l = nodupVarAux [] l
 
-
 varsAux : WProgram → List Wvar
 varsAux (record { readInput = r ; blockProg = b ; writeOutput = o }) = r ∷ o ∷ (varsBlock b)
 
@@ -109,10 +108,15 @@ buildProgBlock c = numProg zero (buildInterProg c)
 
 record Wenv : Set where
   field
-    st : Store
-    cpt : ℕ
-    stack : List ℕ
-    pg : ProgBlock
+    st     : Store
+    cpt    : ℕ
+    stack  : List ℕ
+    pg     : ProgBlock
+    output : Wvar
 
 PrepProg : WProgram → Wdata → Wenv
-PrepProg p d = record { st = initStore p d ; cpt = 0 ; stack = [] ; pg = buildProgBlock (WProgram.blockProg p) }
+PrepProg p d = record { st = initStore p d ;
+                        cpt = 0 ;
+                        stack = [] ;
+                        pg = buildProgBlock (WProgram.blockProg p) ;
+                        output =  WProgram.writeOutput p }
