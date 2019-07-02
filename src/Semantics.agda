@@ -108,15 +108,17 @@ buildProgBlock c = numProg zero (buildInterProg c)
 
 record Wenv : Set where
   field
-    st     : Store
-    cpt    : ℕ
-    stack  : List ℕ
-    pg     : ProgBlock
-    output : Wvar
+    st      : Store
+    cpt     : ℕ
+    stack   : List ℕ
+    cmdDone : ProgBlock 
+    cmdTodo : ProgBlock
+    output  : Wvar
 
 PrepProg : WProgram → Wdata → Wenv
-PrepProg p d = record { st = initStore p d ;
-                        cpt = 0 ;
-                        stack = [] ;
-                        pg = buildProgBlock (WProgram.blockProg p) ;
-                        output =  WProgram.writeOutput p }
+PrepProg p d = record { st      = initStore p d ;
+                        cpt     = 0 ;
+                        stack   = [] ;
+                        cmdDone = [] ;
+                        cmdTodo = buildProgBlock (WProgram.blockProg p) ;
+                        output  =  WProgram.writeOutput p }
