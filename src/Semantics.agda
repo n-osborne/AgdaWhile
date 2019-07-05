@@ -21,7 +21,7 @@ _==_ : Wvar → Wvar → Bool
 _≡ᵈ_ : Wdata → Wdata → Bool
 nil       ≡ᵈ nil       = true
 (d₁ • d₂) ≡ᵈ (d₃ • d₄) = (d₁ ≡ᵈ d₃) ∧ (d₂ ≡ᵈ d₄)
-d₁        ≡ᵈ d₂        = false
+_         ≡ᵈ _         = false
 
 -- the empty store
 stempty : Store
@@ -118,9 +118,9 @@ record Wenv : Set where
     cmds    : DoubleStack 
     output  : Wvar
 
-PrepProg : WProgram → Wdata → Wenv
-PrepProg p d = record { st      = initStore p d ;
+prepProg : WProgram → Wdata → Wenv
+prepProg p d = record { st      = initStore p d ;
                         cpt     = 0 ;
                         stack   = [] ;
-                        cmds = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
-                        output  =  WProgram.writeOutput p }
+                        cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
+                        output  = WProgram.writeOutput p }
