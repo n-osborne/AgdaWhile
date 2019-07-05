@@ -21,7 +21,7 @@ _==_ : Wvar → Wvar → Bool
 _≡ᵈ_ : Wdata → Wdata → Bool
 nil       ≡ᵈ nil       = true
 (d₁ • d₂) ≡ᵈ (d₃ • d₄) = (d₁ ≡ᵈ d₃) ∧ (d₂ ≡ᵈ d₄)
-d₁        ≡ᵈ d₂        = false
+_         ≡ᵈ _         = false
 
 -- the empty store
 stempty : Store
@@ -43,12 +43,16 @@ varsBlock (v ≔ _)         = [ v ]
 varsBlock (b₁ %% b₂)      = varsBlock b₁ ++ varsBlock b₂
 varsBlock (while _ do: b) = varsBlock b
 
--- Get the list of Wvar in a WProgram
+-- Get the list of Wvar in a WProgram with input in first var and
+-- output in second element of the list
+nodupVarAux : List Wvar → List Wvar → List Wvar
+nodupVarAux acc [] = acc
+nodupVarAux acc (x ∷ xs) with any (λ v → x == v) acc
+... | true  = nodupVarAux acc xs
+... | false = nodupVarAux (x ∷ acc) xs 
+
 nodupVar : List Wvar → List Wvar
-nodupVar [] = []
-nodupVar (x ∷ xs) with any (λ v → x == v) xs
-... | true  = nodupVar xs
-... | false = x ∷ (nodupVar xs)
+nodupVar l = nodupVarAux [] l
 
 varsAux : WProgram → List Wvar
 varsAux (record { readInput = r ; blockProg = b ; writeOutput = o }) = r ∷ o ∷ (varsBlock b)
@@ -77,9 +81,9 @@ evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 
 -- Define intermediary representation of Wcommands
 data InterCom : Set where
-  assign  : Wvar → Wexp → InterCom
+  assign    : Wvar → Wexp → InterCom
   whilecond : Wexp → InterCom
-  whileend : InterCom
+  whileend  : InterCom
 
 -- organize evaluation with an instruction pointer
 record WPointCom : Set where
@@ -98,16 +102,25 @@ buildInterProg (while e do: c) = (whilecond e) ∷ (buildInterProg c) ++ [ while
 numProg : ℕ → List InterCom → ProgBlock
 numProg _ []       = []
 numProg n (x ∷ xs) = (n , x) ∷ numProg (suc n) xs
-
 buildProgBlock : Wcommand → ProgBlock
 buildProgBlock c = numProg zero (buildInterProg c)
 
+record DoubleStack : Set where
+  field
+    stack1 : ProgBlock
+    stack2 : ProgBlock
+
 record Wenv : Set where
   field
-    st : Store
-    cpt : ℕ
-    stack : List ℕ
-    pg : ProgBlock
+    st      : Store
+    cpt     : ℕ
+    stack   : List ℕ
+    cmds    : DoubleStack 
+    output  : Wvar
 
-PrepProg : WProgram → Wdata → Wenv
-PrepProg p d = record { st = initStore p d ; cpt = 0 ; stack = [] ; pg = buildProgBlock (WProgram.blockProg p) }
+prepProg : WProgram → Wdata → Wenv
+prepProg p d = record { st      = initStore p d ;
+                        cpt     = 0 ;
+                        stack   = [] ;
+                        cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
+                        output  = WProgram.writeOutput p }
