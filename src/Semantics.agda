@@ -102,23 +102,25 @@ buildInterProg (while e do: c) = (whilecond e) ∷ (buildInterProg c) ++ [ while
 numProg : ℕ → List InterCom → ProgBlock
 numProg _ []       = []
 numProg n (x ∷ xs) = (n , x) ∷ numProg (suc n) xs
-
 buildProgBlock : Wcommand → ProgBlock
 buildProgBlock c = numProg zero (buildInterProg c)
+
+record DoubleStack : Set where
+  field
+    stack1 : ProgBlock
+    stack2 : ProgBlock
 
 record Wenv : Set where
   field
     st      : Store
     cpt     : ℕ
     stack   : List ℕ
-    cmdDone : ProgBlock 
-    cmdTodo : ProgBlock
+    cmds    : DoubleStack 
     output  : Wvar
 
 PrepProg : WProgram → Wdata → Wenv
 PrepProg p d = record { st      = initStore p d ;
                         cpt     = 0 ;
                         stack   = [] ;
-                        cmdDone = [] ;
-                        cmdTodo = buildProgBlock (WProgram.blockProg p) ;
+                        cmds = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
                         output  =  WProgram.writeOutput p }
