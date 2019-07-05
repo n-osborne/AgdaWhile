@@ -124,3 +124,37 @@ prepProg p d = record { st      = initStore p d ;
                         stack   = [] ;
                         cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
                         output  = WProgram.writeOutput p }
+
+-- Small Step Semantic for While Language
+oneStepEval : Wenv → Wenv
+-- assignement
+oneStepEval (record { st = s ;
+                      cpt = c ;
+                      stack = l ;
+                      cmds = (record { stack1 = s₁ ; stack2 = ((n , (assign x y)) ∷ s₂) }) ;
+                           output = o }) = record { st = stupdate x (evalExp y s) s ;
+                                                    cpt = (suc c) ;
+                                                    stack = l ;
+                                                    cmds = record { stack1 = ((n , (assign x y)) ∷ s₁) ;
+                                                                    stack2 = s₂ } ;
+                                                    output = o }
+-- enter while loop                             
+oneStepEval (record { st = s ;
+                      cpt = c ;
+                      stack = l ;
+                      cmds = (record { stack1 = s₁ ; stack2 = ((n , (whilecond e)) ∷ s₂) }) ;
+                      output = o }) = _
+-- end of while loop                      
+oneStepEval (record { st = s ;
+                      cpt = c ;
+                      stack = l ;
+                      cmds = (record { stack1 = s₁ ; stack2 = ((n , (whileend)) ∷ s₂) }) ;
+                      output = o }) = _
+-- end of pg                      
+oneStepEval (record { st = s ;
+                      cpt = c ;
+                      stack = l ;
+                      cmds = (record { stack1 = s₁ ; stack2 = [] }) ;
+                      output = o }) = _
+                      
+                      
