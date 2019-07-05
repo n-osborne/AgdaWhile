@@ -110,17 +110,20 @@ record DoubleStack : Set where
     stack1 : ProgBlock
     stack2 : ProgBlock
 
+reverseBackTo : ℕ → DoubleStack → DoubleStack
+reverseBackTo _ s = s
+
 record Wenv : Set where
   field
-    st      : Store
-    cpt     : ℕ
-    stack   : List ℕ
-    cmds    : DoubleStack 
-    output  : Wvar
+    st      : Store       -- store the variable and their value
+--     cpt     : ℕ -- what was that ?
+    stack   : List ℕ      -- stack of beginnning of while loop
+    cmds    : DoubleStack -- commands of the pg in a list with iterator
+    output  : Wvar        -- the out put var
 
 prepProg : WProgram → Wdata → Wenv
 prepProg p d = record { st      = initStore p d ;
-                        cpt     = 0 ;
+                        -- cpt     = 0 ;
                         stack   = [] ;
                         cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
                         output  = WProgram.writeOutput p }
@@ -129,37 +132,49 @@ prepProg p d = record { st      = initStore p d ;
 oneStepEval : Wenv → Wenv
 -- assignement
 oneStepEval (record { st = s ;
-                      cpt = c ;
+                      -- cpt = c ;
                       stack = l ;
                       cmds = (record { stack1 = s₁ ; stack2 = ((n , (assign x y)) ∷ s₂) }) ;
                            output = o }) = record { st = stupdate x (evalExp y s) s ;
-                                                    cpt = (suc c) ;
+                                                    -- cpt = (suc c) ;
                                                     stack = l ;
                                                     cmds = record { stack1 = ((n , (assign x y)) ∷ s₁) ;
                                                                     stack2 = s₂ } ;
                                                     output = o }
 -- enter while loop                             
 oneStepEval (record { st = s ;
-                      cpt = c ;
+                      -- cpt = c ;
                       stack = l ;
                       cmds = (record { stack1 = s₁ ; stack2 = (cmd@(n , whileBegin) ∷ s₂) }) ;
                       output = o }) = record { st = s ;
-                                               cpt = suc c ;
+                                               -- cpt = suc c ;
                                                stack = n ∷ l ;
                                                cmds = record { stack1 = cmd ∷ s₁ ;
                                                                stack2 = s₂ } ;
                                                output = o }
 -- end of while loop                      
 oneStepEval (record { st = s ;
-                      cpt = c ;
-                      stack = l ;
-                      cmds = (record { stack1 = s₁ ; stack2 = ((n , (whileend)) ∷ s₂) }) ;
-                      output = o }) = _
--- end of pg                      
-oneStepEval (record { st = s ;
-                      cpt = c ;
-                      stack = l ;
-                      cmds = (record { stack1 = s₁ ; stack2 = [] }) ;
-                      output = o }) = _
+                      -- cpt = c ;
+                      stack = l@(x ∷ xs) ;
+                      cmds = d@(record { stack1 = s₁ ; stack2 = (cmd@(n , (whileEnd e)) ∷ s₂) }) ;
+                      output = o }) with evalExp e s ≡ᵈ nil
+... | true  = record { st = s ;
+                       -- cpt = suc c ;
+                       stack = xs ;
+                       cmds = (record { stack1 = cmd ∷ s₁ ;
+                                        stack2 = s₂ }) ;
+                       output = o }
+... | false = record { st = s ;
+                       stack = l ;
+                       cmds = reverseBackTo x d ;
+                       output = o }
+-- end of pg
+oneStepEval r = r
+
+-- oneStepEval (record { st = s ;
+--                       -- cpt = c ;
+--                       stack = l ;
+--                       cmds = (record { stack1 = s₁ ; stack2 = [] }) ;
+--                       output = o }) = _
                       
                       
