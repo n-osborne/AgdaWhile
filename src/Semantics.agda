@@ -81,9 +81,9 @@ evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 
 -- Define intermediary representation of Wcommands
 data InterCom : Set where
-  assign    : Wvar → Wexp → InterCom
-  whilecond : Wexp → InterCom
-  whileend  : InterCom
+  assign     : Wvar → Wexp → InterCom
+  whileBegin : InterCom
+  whileEnd   : Wexp → InterCom
 
 -- organize evaluation with an instruction pointer
 record WPointCom : Set where
@@ -97,7 +97,7 @@ ProgBlock = List WPointCom
 buildInterProg : Wcommand → List InterCom
 buildInterProg (x ≔ y)         = [ (assign x y) ]
 buildInterProg (c₁ %% c₂)      = (buildInterProg c₁) ++ (buildInterProg c₂)
-buildInterProg (while e do: c) = (whilecond e) ∷ (buildInterProg c) ++ [ whileend ]
+buildInterProg (while e do: c) = whileBegin ∷ (buildInterProg c) ++ [ (whileEnd e) ]
 
 numProg : ℕ → List InterCom → ProgBlock
 numProg _ []       = []
@@ -142,8 +142,13 @@ oneStepEval (record { st = s ;
 oneStepEval (record { st = s ;
                       cpt = c ;
                       stack = l ;
-                      cmds = (record { stack1 = s₁ ; stack2 = ((n , (whilecond e)) ∷ s₂) }) ;
-                      output = o }) = _
+                      cmds = (record { stack1 = s₁ ; stack2 = (cmd@(n , whileBegin) ∷ s₂) }) ;
+                      output = o }) = record { st = s ;
+                                               cpt = suc c ;
+                                               stack = n ∷ l ;
+                                               cmds = record { stack1 = cmd ∷ s₁ ;
+                                                               stack2 = s₂ } ;
+                                               output = o }
 -- end of while loop                      
 oneStepEval (record { st = s ;
                       cpt = c ;
