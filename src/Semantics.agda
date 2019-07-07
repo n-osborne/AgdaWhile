@@ -110,8 +110,14 @@ record DoubleStack : Set where
     stack1 : ProgBlock
     stack2 : ProgBlock
 
-reverseBackTo : ℕ → DoubleStack → DoubleStack
-reverseBackTo _ s = s
+goBackTo : ℕ → DoubleStack → DoubleStack
+goBackTo n (record {stack1 = s₁ ; stack2 = s₂}) = f n s₁ s₂
+  where
+  f : ℕ → ProgBlock → ProgBlock → DoubleStack
+  f n [] l = record {stack1 = [] ; stack2 = l}
+  f n (x@(m , c) ∷ xs) ys with n ≡ᵇ m
+  ... | true  = record {stack1 = xs ; stack2 = (x ∷ ys)}
+  ... | false = f n xs (x ∷ ys)
 
 record Wenv : Set where
   field
@@ -166,7 +172,7 @@ oneStepEval (record { st = s ;
                        output = o }
 ... | false = record { st = s ;
                        stack = l ;
-                       cmds = reverseBackTo x d ;
+                       cmds = goBackTo x d ;
                        output = o }
 -- end of pg
 oneStepEval r = r
