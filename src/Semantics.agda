@@ -81,9 +81,9 @@ evalExp (isEq e₁ e₂) st with (evalExp e₁ st) ≡ᵈ (evalExp e₂ st)
 
 -- Define intermediary representation of Wcommands
 data InterCom : Set where
-  assign    : Wvar → Wexp → InterCom
-  whilecond : Wexp → InterCom
-  whileend  : InterCom
+  assign     : Wvar → Wexp → InterCom
+  whileBegin : InterCom
+  whileEnd   : Wexp → InterCom
 
 -- organize evaluation with an instruction pointer
 record WPointCom : Set where
@@ -97,11 +97,12 @@ ProgBlock = List WPointCom
 buildInterProg : Wcommand → List InterCom
 buildInterProg (x ≔ y)         = [ (assign x y) ]
 buildInterProg (c₁ %% c₂)      = (buildInterProg c₁) ++ (buildInterProg c₂)
-buildInterProg (while e do: c) = (whilecond e) ∷ (buildInterProg c) ++ [ whileend ]
+buildInterProg (while e do: c) = whileBegin ∷ (buildInterProg c) ++ [ (whileEnd e) ]
 
 numProg : ℕ → List InterCom → ProgBlock
 numProg _ []       = []
 numProg n (x ∷ xs) = (n , x) ∷ numProg (suc n) xs
+
 buildProgBlock : Wcommand → ProgBlock
 buildProgBlock c = numProg zero (buildInterProg c)
 
@@ -110,17 +111,61 @@ record DoubleStack : Set where
     stack1 : ProgBlock
     stack2 : ProgBlock
 
+goBackTo : ℕ → DoubleStack → DoubleStack
+goBackTo n (record {stack1 = s₁ ; stack2 = s₂}) = f n s₁ s₂
+  where
+  f : ℕ → ProgBlock → ProgBlock → DoubleStack
+  f n [] l = record {stack1 = [] ; stack2 = l}
+  f n (x@(m , c) ∷ xs) ys with n ≡ᵇ m
+  ... | true  = record {stack1 = xs ; stack2 = (x ∷ ys)}
+  ... | false = f n xs (x ∷ ys)
+
 record Wenv : Set where
   field
-    st      : Store
-    cpt     : ℕ
-    stack   : List ℕ
-    cmds    : DoubleStack 
-    output  : Wvar
+    st      : Store       -- store the variable and their value
+    stack   : List ℕ      -- stack of beginnning of while loop
+    cmds    : DoubleStack -- commands of the pg in a list with iterator
+    output  : Wvar        -- the out put var
 
 prepProg : WProgram → Wdata → Wenv
 prepProg p d = record { st      = initStore p d ;
-                        cpt     = 0 ;
                         stack   = [] ;
                         cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
                         output  = WProgram.writeOutput p }
+
+-- Small Step Semantic for While Language
+oneStepEval : Wenv → Wenv
+-- assignement
+oneStepEval (record { st     = s ;
+                      stack  = l ;
+                      cmds   = (record { stack1 = s₁ ; stack2 = (cmd@(n , (assign x y)) ∷ s₂) }) ;
+                      output = o }) = record { st     = stupdate x (evalExp y s) s ;
+                                               stack  = l ;
+                                               cmds   = record { stack1 = (cmd ∷ s₁) ;
+                                                                 stack2 = s₂ } ;
+                                               output = o }
+-- enter while loop                             
+oneStepEval (record { st     = s ;
+                      stack  = l ;
+                      cmds   = (record { stack1 = s₁ ; stack2 = (cmd@(n , whileBegin) ∷ s₂) }) ;
+                      output = o }) = record { st     = s ;
+                                               stack  = n ∷ l ;
+                                               cmds   = record { stack1 = cmd ∷ s₁ ;
+                                                                 stack2 = s₂ } ;
+                                               output = o }
+-- end of while loop                      
+oneStepEval (record { st     = s ;
+                      stack  = l@(x ∷ xs) ;
+                      cmds   = d@(record { stack1 = s₁ ; stack2 = (cmd@(n , (whileEnd e)) ∷ s₂) }) ;
+                      output = o }) with evalExp e s ≡ᵈ nil
+... | true  = record { st     = s ;
+                       stack  = xs ;
+                       cmds   = (record { stack1 = cmd ∷ s₁ ;
+                                          stack2 = s₂ }) ;
+                       output = o }
+... | false = record { st     = s ;
+                       stack  = l ;
+                       cmds   = goBackTo x d ;
+                       output = o }
+-- end of pg -- do nothing
+oneStepEval r = r
