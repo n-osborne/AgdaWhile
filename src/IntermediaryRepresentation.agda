@@ -118,17 +118,18 @@ module IntermediaryCommands where
   buildProgBlock c = numProg zero (buildInterProg c)
 
   record DoubleStack : Set where
+    constructor _∣_
     field
       stack1 : ProgBlock
       stack2 : ProgBlock
 
   goBackTo : ℕ → DoubleStack → DoubleStack
-  goBackTo n (record {stack1 = s₁ ; stack2 = s₂}) = f n s₁ s₂
+  goBackTo n ( s₁ ∣ s₂) = f n s₁ s₂
     where
     f : ℕ → ProgBlock → ProgBlock → DoubleStack
-    f n [] l = record {stack1 = [] ; stack2 = l}
+    f n [] l = [] ∣ l
     f n (x@(m , c) ∷ xs) ys with n ≡ᵇ m
-    ... | true  = record {stack1 = xs ; stack2 = (x ∷ ys)}
+    ... | true  = xs ∣ (x ∷ ys)
     ... | false = f n xs (x ∷ ys)
     
 open IntermediaryCommands public
@@ -145,5 +146,5 @@ record Wenv : Set where
 prepProg : WProgram → Wdata → Wenv
 prepProg p d = record { st      = initStore p d ;
                         stack   = [] ;
-                        cmds    = record { stack1 = [] ; stack2 = buildProgBlock (WProgram.blockProg p) } ;
+                        cmds    = [] ∣ buildProgBlock (WProgram.blockProg p) ;
                         output  = WProgram.writeOutput p }
