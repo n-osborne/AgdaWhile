@@ -60,7 +60,7 @@ module Store where
     nodupVar l = nodupVarAux [] l
 
     varsAux : WProgram → List Wvar
-    varsAux (record { readInput = r ; blockProg = b ; writeOutput = o }) = r ∷ o ∷ (varsBlock b)
+    varsAux (read r begin b write o) = r ∷ o ∷ (varsBlock b)
 
     vars : WProgram → List Wvar
     vars r = nodupVar (varsAux r)
