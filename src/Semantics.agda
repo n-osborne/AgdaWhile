@@ -46,9 +46,12 @@ oneStepEval r = r
 infix 4 _⟶_
 
 -- Small Step Semenatic as Data Structure
+-- Inspired by `Programming Language Foundations in Agda`, the semantic is
+-- presented as deduction rules 
 data _⟶_ : Wenv → Wenv → Set where
 
-  ε-assign : ∀ {s : Store} {l : List ℕ } {n : ℕ} {s₁ s₂ : ProgBlock} {y : Wexp} {x o : Wvar}
+  ε-assign : ∀ {s : Store} {l : List ℕ } {n : ℕ}
+               {s₁ s₂ : ProgBlock} {y : Wexp} {x o : Wvar}
              → record { st     = s ;
                         stack  = l ;
                         cmds   = s₁ ∣ (n , (assign x y) ∷ s₂) ;
@@ -59,7 +62,8 @@ data _⟶_ : Wenv → Wenv → Set where
                       cmds   = ((n , (assign x y)) ∷ s₁) ∣ s₂ ;
                       output = o }
 
-  ε-whileBegin : ∀ {s : Store} {l : List ℕ } {n : ℕ} {s₁ s₂ : ProgBlock} {o : Wvar}
+  ε-whileBegin : ∀ {s : Store} {l : List ℕ } {n : ℕ}
+                   {s₁ s₂ : ProgBlock} {o : Wvar}
                  → record { st     = s ;
                             stack  = l ;
                             cmds   = s₁ ∣ ((n , whileBegin) ∷ s₂) ;
@@ -70,7 +74,9 @@ data _⟶_ : Wenv → Wenv → Set where
                           cmds   = ((n , whileBegin) ∷ s₁) ∣ s₂ ;
                           output = o }
   
-  ε-whileEndNil : ∀ {s : Store} {xs : List ℕ} {x n : ℕ} {e : Wexp} {s₁ s₂ : ProgBlock} {o : Wvar} {check : (evalExp e s ≡ᵈ nil) ≡ true}
+  ε-whileEndNil : ∀ {s : Store} {xs : List ℕ} {x n : ℕ}
+                    {e : Wexp} {s₁ s₂ : ProgBlock} {o : Wvar}
+                    {check : (evalExp e s ≡ᵈ nil) ≡ true}
                   → record { st     = s ;
                              stack  = x ∷ xs ;
                              cmds   = s₁ ∣ ((n , (whileEnd e)) ∷ s₂) ;
@@ -80,7 +86,10 @@ data _⟶_ : Wenv → Wenv → Set where
                            stack  = xs ;
                            cmds   = ((n , (whileEnd atom)) ∷ s₁) ∣ s₂ ;
                            output = o }
-  ε-whileEndNotNil : ∀ {s : Store} {xs : List ℕ} {x n : ℕ} {e : Wexp} {s₁ s₂ : ProgBlock} {o : Wvar} {check : (evalExp e s ≡ᵈ nil) ≡ false}
+
+  ε-whileEndNotNil : ∀ {s : Store} {xs : List ℕ} {x n : ℕ}
+                       {e : Wexp} {s₁ s₂ : ProgBlock} {o : Wvar}
+                       {check : (evalExp e s ≡ᵈ nil) ≡ false}
                      → record { st     = s ;
                              stack  = xs ;
                              cmds   = s₁ ∣ ((n , (whileEnd e)) ∷ s₂) ;
@@ -89,4 +98,16 @@ data _⟶_ : Wenv → Wenv → Set where
                   record { st     = s ;
                            stack  = x ∷ xs ;
                            cmds   = goBackTo x (s₁ ∣ ((n , (whileEnd e)) ∷ s₂)) ;
+                           output = o }
+                           
+  ε-whileOutput : ∀ {s : Store} {l : List ℕ} {s₁ : ProgBlock}
+                    {o : Wvar}
+                  → record { st     = s ;
+                             stack  = l ;
+                             cmds   = s₁ ∣ [] ;
+                             output = o }
+                  ⟶ ------------------------------------------
+                  record { st     = s ;
+                           stack  = l ;
+                           cmds   = s₁ ∣ [] ;
                            output = o }
