@@ -35,6 +35,7 @@ data Wcommand : Set where
 -- A While Program has an input variable, a block of commands and an
 -- ouput variable
 record WProgram : Set where
+  constructor read_begin_write_
   field
     readInput   : Wvar
     blockProg   : Wcommand
