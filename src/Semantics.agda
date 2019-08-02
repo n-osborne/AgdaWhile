@@ -94,11 +94,11 @@ data _⟶_ : Wenv → Wenv → Set where
                              stack  = xs ;
                              cmds   = s₁ ∣ ((n , (whileEnd e)) ∷ s₂) ;
                              output = o }
-                  ⟶ ------------------------------------------
-                  record { st     = s ;
-                           stack  = x ∷ xs ;
-                           cmds   = goBackTo x (s₁ ∣ ((n , (whileEnd e)) ∷ s₂)) ;
-                           output = o }
+                     ⟶ ------------------------------------------
+                     record { st     = s ;
+                              stack  = x ∷ xs ;
+                              cmds   = goBackTo x (s₁ ∣ ((n , (whileEnd e)) ∷ s₂)) ;
+                              output = o }
                            
   ε-whileOutput : ∀ {s : Store} {l : List ℕ} {s₁ : ProgBlock}
                     {o : Wvar}
